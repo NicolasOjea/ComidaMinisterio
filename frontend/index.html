@@ -78,6 +78,21 @@
     .notes { color: var(--muted); font-size: 13px; }
     .error { color: #c0392b; font-size: 13px; }
     .success { color: #1f8a4c; font-size: 13px; }
+    .actions { width: 70px; text-align: right; }
+    .delete-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: #c0392b;
+      font-size: 20px;
+      line-height: 1;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+    .delete-btn:hover { background: #ffeaea; color: #922b21; }
+    .delete-btn:focus { outline: 2px solid #ffd6d6; }
 
     @media (max-width: 960px) { .grid { grid-template-columns: 1fr; } }
   </style>
@@ -155,6 +170,7 @@
             <th>Lugar</th>
             <th>Puntaje</th>
             <th>Observaciones</th>
+            <th class="actions">Borrar</th>
           </tr>
         </thead>
         <tbody id="ratings-body"></tbody>
@@ -195,6 +211,12 @@
         if (!res.ok) throw new Error(data.error || 'Error al guardar');
         return data;
       },
+      async deleteRating(id) {
+        const res = await fetch(`/api/ratings/${id}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'No se pudo borrar');
+        return data;
+      },
     };
 
     const personSelect = document.getElementById('person-select');
@@ -225,7 +247,7 @@
 
     function renderRatings(list) {
       if (!list.length) {
-        ratingsBody.innerHTML = `<tr><td colspan="5" class="empty">Sin datos aun</td></tr>`;
+        ratingsBody.innerHTML = `<tr><td colspan="6" class="empty">Sin datos aun</td></tr>`;
         return;
       }
       const rows = list.map(item => {
@@ -235,6 +257,9 @@
           <td>${item.place}</td>
           <td class="score">${item.score}/10</td>
           <td class="notes">${item.notes || ''}</td>
+          <td class="actions">
+            <button class="delete-btn" data-id="${item.id}" aria-label="Eliminar reseña de ${item.person.name}">×</button>
+          </td>
         </tr>`;
       });
       ratingsBody.innerHTML = rows.join('');
@@ -299,6 +324,21 @@
     filterPerson.addEventListener('change', loadRatings);
     orderSelect.addEventListener('change', loadRatings);
     refreshBtn.addEventListener('click', loadRatings);
+    ratingsBody.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.delete-btn');
+      if (!btn) return;
+      ratingMsg.textContent = '';
+      const id = btn.dataset.id;
+      const confirmDelete = confirm('¿Eliminar esta reseña?');
+      if (!confirmDelete) return;
+      try {
+        await api.deleteRating(id);
+        setMessage(ratingMsg, 'Puntaje borrado', 'success');
+        await loadRatings();
+      } catch (err) {
+        setMessage(ratingMsg, err.message, 'error');
+      }
+    });
 
     (async function init() {
       await loadPersons();

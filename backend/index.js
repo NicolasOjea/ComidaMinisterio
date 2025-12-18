@@ -114,6 +114,18 @@ app.post("/api/ratings", (req, res) => {
   return res.status(201).json({ message: "Guardado" });
 });
 
+app.delete("/api/ratings/:id", (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) return res.status(400).json({ error: "ID no valido" });
+
+  const idx = db.ratings.findIndex((r) => r.id === id);
+  if (idx === -1) return res.status(404).json({ error: "Puntaje no encontrado" });
+
+  db.ratings.splice(idx, 1);
+  saveDb(db);
+  return res.json({ message: "Eliminado" });
+});
+
 const frontendPath = path.resolve(__dirname, "../frontend");
 app.use(express.static(frontendPath));
 app.get("*", (_req, res) => {
