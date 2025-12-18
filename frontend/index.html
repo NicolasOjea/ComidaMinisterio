@@ -1,0 +1,309 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Puntajes de comida</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --card: #ffffff;
+      --text: #1f2a3d;
+      --muted: #5c6475;
+      --line: #e3e7ef;
+      --accent: #2f7cf6;
+      --accent-soft: #e6eeff;
+      --shadow: 0 10px 25px rgba(0,0,0,0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    h1 { margin: 0 0 6px; font-size: 24px; }
+    h2 { margin: 0 0 10px; font-size: 18px; }
+    p { margin: 0; color: var(--muted); }
+
+    header { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+
+    .grid { display: grid; grid-template-columns: 320px 1fr; gap: 14px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    form { display: flex; flex-direction: column; gap: 10px; }
+    label { font-size: 13px; color: var(--muted); }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #f8f9fc;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+    select { background: #f1f3f8; }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { opacity: 0.92; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .toolbar select, .toolbar button { width: auto; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+    tr:hover td { background: #f8f9fc; }
+    .score { font-weight: 700; color: var(--accent); }
+    .empty { color: var(--muted); padding: 16px 0; }
+    .pill { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #eef2fb; color: var(--text); font-size: 12px; }
+    .notes { color: var(--muted); font-size: 13px; }
+    .error { color: #c0392b; font-size: 13px; }
+    .success { color: #1f8a4c; font-size: 13px; }
+
+    @media (max-width: 960px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Puntajes de comida</h1>
+      <p>Comparte calificaciones simples para los almuerzos del equipo.</p>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Agregar persona</h2>
+      <form id="person-form">
+        <div>
+          <label for="person-name">Nombre</label>
+          <input id="person-name" name="name" placeholder="Ej: Ana" required />
+        </div>
+        <button type="submit">Guardar persona</button>
+        <div id="person-message"></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Nuevo puntaje</h2>
+      <form id="rating-form">
+        <div>
+          <label for="person-select">Persona</label>
+          <select id="person-select" required></select>
+        </div>
+        <div>
+          <label for="food">Comida</label>
+          <input id="food" name="food" placeholder="Ej: Milanesa con pure" required />
+        </div>
+        <div>
+          <label for="place">Lugar</label>
+          <input id="place" name="place" placeholder="Ej: Cantina del centro" required />
+        </div>
+        <div>
+          <label for="score">Puntaje (1-10)</label>
+          <input id="score" name="score" type="number" min="1" max="10" required />
+        </div>
+        <div>
+          <label for="notes">Observaciones (opcional)</label>
+          <textarea id="notes" name="notes" rows="2" placeholder="Servicio rapido, porciones grandes..."></textarea>
+        </div>
+        <button type="submit">Publicar puntaje</button>
+        <div id="rating-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <div class="toolbar">
+      <select id="filter-person">
+        <option value="">Todas las personas</option>
+      </select>
+      <select id="order">
+        <option value="newest">Mas recientes</option>
+        <option value="score_desc">Mayor puntaje</option>
+        <option value="score_asc">Menor puntaje</option>
+        <option value="place_asc">Lugar A-Z</option>
+        <option value="place_desc">Lugar Z-A</option>
+      </select>
+      <button id="refresh" type="button">Actualizar</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Persona</th>
+            <th>Comida</th>
+            <th>Lugar</th>
+            <th>Puntaje</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody id="ratings-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const api = {
+      async getPersons() {
+        const res = await fetch('/api/persons');
+        if (!res.ok) throw new Error('No se pudieron cargar personas');
+        return res.json();
+      },
+      async addPerson(name) {
+        const res = await fetch('/api/persons', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al guardar');
+        return data;
+      },
+      async getRatings(params = {}) {
+        const qs = new URLSearchParams(params);
+        const res = await fetch(`/api/ratings?${qs.toString()}`);
+        if (!res.ok) throw new Error('No se pudieron cargar puntajes');
+        return res.json();
+      },
+      async addRating(payload) {
+        const res = await fetch('/api/ratings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al guardar');
+        return data;
+      },
+    };
+
+    const personSelect = document.getElementById('person-select');
+    const filterPerson = document.getElementById('filter-person');
+    const orderSelect = document.getElementById('order');
+    const ratingsBody = document.getElementById('ratings-body');
+    const refreshBtn = document.getElementById('refresh');
+
+    const personForm = document.getElementById('person-form');
+    const personMsg = document.getElementById('person-message');
+    const ratingForm = document.getElementById('rating-form');
+    const ratingMsg = document.getElementById('rating-message');
+
+    function setMessage(el, text, type = 'success') {
+      el.textContent = text;
+      el.className = type;
+    }
+
+    function renderPersons(list) {
+      const options = list.map(p => `<option value="${p.id}">${p.name}</option>`);
+      personSelect.innerHTML = options.join('');
+
+      const filterOptions = ['<option value="">Todas las personas</option>'].concat(options);
+      const prev = filterPerson.value;
+      filterPerson.innerHTML = filterOptions.join('');
+      if (prev) filterPerson.value = prev;
+    }
+
+    function renderRatings(list) {
+      if (!list.length) {
+        ratingsBody.innerHTML = `<tr><td colspan="5" class="empty">Sin datos aun</td></tr>`;
+        return;
+      }
+      const rows = list.map(item => {
+        return `<tr>
+          <td><span class="pill">${item.person.name}</span></td>
+          <td>${item.food}</td>
+          <td>${item.place}</td>
+          <td class="score">${item.score}/10</td>
+          <td class="notes">${item.notes || ''}</td>
+        </tr>`;
+      });
+      ratingsBody.innerHTML = rows.join('');
+    }
+
+    async function loadPersons() {
+      try {
+        const list = await api.getPersons();
+        renderPersons(list);
+      } catch (err) {
+        setMessage(personMsg, err.message, 'error');
+      }
+    }
+
+    async function loadRatings() {
+      try {
+        const params = {};
+        if (filterPerson.value) params.personId = filterPerson.value;
+        if (orderSelect.value) params.order = orderSelect.value;
+        const list = await api.getRatings(params);
+        renderRatings(list);
+      } catch (err) {
+        setMessage(ratingMsg, err.message, 'error');
+      }
+    }
+
+    personForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('person-name').value.trim();
+      if (!name) return;
+      personMsg.textContent = '';
+      try {
+        await api.addPerson(name);
+        setMessage(personMsg, 'Persona guardada', 'success');
+        personForm.reset();
+        await loadPersons();
+      } catch (err) {
+        setMessage(personMsg, err.message, 'error');
+      }
+    });
+
+    ratingForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      ratingMsg.textContent = '';
+      const payload = {
+        personId: personSelect.value,
+        food: document.getElementById('food').value.trim(),
+        place: document.getElementById('place').value.trim(),
+        score: document.getElementById('score').value,
+        notes: document.getElementById('notes').value.trim(),
+      };
+      try {
+        await api.addRating(payload);
+        setMessage(ratingMsg, 'Puntaje cargado', 'success');
+        ratingForm.reset();
+        await loadRatings();
+      } catch (err) {
+        setMessage(ratingMsg, err.message, 'error');
+      }
+    });
+
+    filterPerson.addEventListener('change', loadRatings);
+    orderSelect.addEventListener('change', loadRatings);
+    refreshBtn.addEventListener('click', loadRatings);
+
+    (async function init() {
+      await loadPersons();
+      await loadRatings();
+    })();
+  </script>
+</body>
+</html>
